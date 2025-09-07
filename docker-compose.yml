@@ -1,0 +1,37 @@
+services:
+  init-directories:
+    image: busybox:1.36
+    volumes:
+      - ./:/var/www/laravel-docker
+    command: >
+      sh -lc "
+      mkdir -p /var/www/laravel-docker/database
+               /var/www/laravel-docker/storage
+               /var/www/laravel-docker/bootstrap/cache &&
+      [ -f /var/www/laravel-docker/database/database.sqlite ] ||
+        touch /var/www/laravel-docker/database/database.sqlite;
+      chmod 666 /var/www/laravel-docker/database/database.sqlite || true;
+      chmod -R 777 /var/www/laravel-docker/storage /var/www/laravel-docker/bootstrap/cache || true
+      "
+    restart: "no"
+
+  fpm:
+    build:
+      context: .
+      dockerfile: docker/Fpm.Dockerfile
+    working_dir: /var/www/laravel-docker
+    volumes:
+      - ./:/var/www/laravel-docker
+    expose:
+      - "9000"
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/Nginx.Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/laravel-docker
+    depends_on:
+      - fpm
